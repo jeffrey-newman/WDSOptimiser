@@ -1,0 +1,8 @@
+/Users/a1091793/Documents/Projects/Parallel NSGAII Backend/respository/parallel-nsgaII-backend
+
+/Users/a1091793/Documents/Projects/EN2Link/EN2Link
+
+/opt/local/libexec/openmpi-mp/mpicc
+/opt/local/libexec/openmpi-mp/mpicxx
+
+
