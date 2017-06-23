@@ -10,11 +10,16 @@
 #include <string>
 #include <random>
 #include <chrono>
+#include <thread>
 #include <boost/mpi.hpp>
 #include <boost/timer/timer.hpp>
 #include "ParallelEvaluator.hpp"
 #include "NSGAII.hpp"
-#include "WDSUtility.hpp"
+#include "WDSOptParameters.hpp"
+#include "WDSOptGUICheckpoints.h"
+#include "WDSOptimiser.hpp"
+#include "WDSOptPostProcess.h"
+
 
 int main(int argc, char * argv[]) {
     boost::mpi::environment env(argc, argv);
@@ -22,10 +27,10 @@ int main(int argc, char * argv[]) {
     WDSOptParameters params;
     //Sleep the threads so that they do not all try and create the same working directory at once, which could potentially cause havoc. This creation usually occurs in the evaluatior constructor but could also be placed in the command line option parser.
     std::this_thread::sleep_for(std::chrono::seconds(world.rank()));
-    int ret = processOptions(argc, argv, params);
-    if (ret == 1)
+    int err = processOptions(argc, argv, params);
+    if (err != 0)
     {
-        return 1;
+        return EXIT_SUCCESS;
     }
 
     params.evaluator_id = world.rank();
@@ -36,7 +41,7 @@ int main(int argc, char * argv[]) {
     {
 
         boost::shared_ptr<boost::timer::auto_cpu_timer> timer(nullptr);
-        boost::filesystem::path timing_fname = params.save_dir.second / "ZonalOptTiming.txt";
+        boost::filesystem::path timing_fname = params.save_dir.second / "WDSOptTiming.txt";
         std::ofstream timer_fs(timing_fname.c_str());
         if (timer_fs.is_open())
         {
@@ -82,7 +87,7 @@ int main(int argc, char * argv[]) {
         {
             pop = restore_population(params.restart_pop_file.second);
         }
-
+        optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
         optimiser(pop);
 
 

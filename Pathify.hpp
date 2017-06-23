@@ -2,10 +2,11 @@
 #define PATHIFY_H
 
 #include <boost/filesystem.hpp>
+#include <iostream>
 
 typedef std::pair<std::string, boost::filesystem::path> CmdLinePaths;
 
-void
+inline void
 pathify(CmdLinePaths & path)
 {
     path.second = boost::filesystem::path(path.first);
@@ -15,7 +16,7 @@ pathify(CmdLinePaths & path)
     }
 }
 
-void
+inline void
 pathify_mk(CmdLinePaths & path)
 {
     path.second = boost::filesystem::path(path.first);

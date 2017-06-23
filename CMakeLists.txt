@@ -5,17 +5,21 @@ set (CMAKE_CXX_STANDARD 11)
 #Variable for location of parallel-nsgaII-backend
 
 FIND_PACKAGE(Boost REQUIRED COMPONENTS filesystem system program_options mpi serialization timer chrono date_time)
-find_package(GDAL)
 find_package(MPI REQUIRED)
 include_directories(${MPI_CXX_INCLUDE_PATH})
 
-SET(USE_VTK CACHE BOOL "Set to on to use vtk visualisation")
-IF (USE_VTK)
-        find_package(VTK REQUIRED)
-                IF(VTK_FOUND)
-                include(${VTK_USE_FILE})
-                add_definitions(-DWITH_VTK)
-                ENDIF()
+#SET(USE_VTK CACHE BOOL "Set to on to use vtk visualisation")
+#IF (USE_VTK)
+#    find_package(VTK REQUIRED)
+#    IF(VTK_FOUND)
+#        include(${VTK_USE_FILE})
+#        add_definitions(-DWITH_VTK)
+#    ENDIF()
+#ENDIF()
+
+SET(USE_QT CACHE BOOL "Set to on to build qt gui with chart visualisation")
+IF (USE_QT)
+    add_subdirectory(GUI)
 ENDIF()
 
 
@@ -56,10 +60,8 @@ SET(prll-nsga-src
         "${PARALLEL-NSGAII}/NSGAII.hpp"
         "${PARALLEL-NSGAII}/ParallelEvaluator.hpp"
         "${PARALLEL-NSGAII}/Population.hpp"
-        "${PARALLEL-NSGAII}/Population.cpp"
         "${PARALLEL-NSGAII}/ProblemDefinitions.hpp"
         "${PARALLEL-NSGAII}/Selection.hpp"
-        "${PARALLEL-NSGAII}/Types.hpp"
 
         "${PARALLEL-NSGAII}/Checkpoints/MaxGenCheckpoint.hpp"
         "${PARALLEL-NSGAII}/Checkpoints/SavePopCheckpoint.hpp"
@@ -84,6 +86,18 @@ SET(prll-nsga-src
 
 link_directories(${Boost_LIBRARY_DIRS})
 
+SET(OptCommon_Srcs
+        WDSOptimiser.cpp
+        WDSOptParameters.cpp
+        WDSOptPostProcess.cpp
+        WDSOptCheckpoints.cpp
+        Pathify.hpp
+        ${prll-nsga-src}
+        WDSNSGAII.cpp
+        )
+
+add_library(wdsoptcommon STATIC ${OptCommon_Srcs})
+
 
 ##################################################################################################################
 #                                                                                                                #
@@ -94,21 +108,20 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 SET(parrallel_wds_opt
         MainPar.cpp
-        WDSOptimiser.hpp
-        WDSUtility.hpp
-        Pathify.hpp
     )
 
-add_executable(wdsoptpar ${parrallel_wds_opt} ${prll-nsga-src} )
-target_link_libraries(wdsoptpar  ${Boost_LIBRARIES} ${MPI_LIBRARIES} ENLink)
+add_executable(wdsoptpar ${parrallel_wds_opt} )
+target_link_libraries(wdsoptpar  ${Boost_LIBRARIES} ${MPI_LIBRARIES} ENLink wdsoptcommon)
 
-IF(USE_VTK)
-    if(VTK_LIBRARIES)
-        target_link_libraries(wdsoptpar ${VTK_LIBRARIES})
-    else()
-        target_link_libraries(wdsoptpar vtkHybrid vtkWidgets)
-    endif()
-ENDIF()
+#IF(USE_VTK)
+#    if(VTK_LIBRARIES)
+#        target_link_libraries(wdsoptpar ${VTK_LIBRARIES})
+#    else()
+#        target_link_libraries(wdsoptpar vtkHybrid vtkWidgets)
+#    endif()
+#ENDIF()
+
+
 
 
 ##################################################################################################################
@@ -121,23 +134,20 @@ ENDIF()
 
 SET(serial_wds_opt
         MainSer.cpp
-        WDSOptimiser.hpp
-        WDSUtility.hpp
-        Pathify.hpp
     )
 
 
 
-add_executable(wdsoptser ${serial_wds_opt} ${prll-nsga-src} )
-target_link_libraries(wdsoptser  ${Boost_LIBRARIES} ENLink)
+add_executable(wdsoptser ${serial_wds_opt} )
+target_link_libraries(wdsoptser  ${Boost_LIBRARIES} ENLink wdsoptcommon)
 
-IF(USE_VTK)
-    if(VTK_LIBRARIES)
-        target_link_libraries(wdsoptser ${VTK_LIBRARIES})
-    else()
-        target_link_libraries(wdsoptser vtkHybrid vtkWidgets)
-    endif()
-ENDIF()
+#IF(USE_VTK)
+#    if(VTK_LIBRARIES)
+#        target_link_libraries(wdsoptser ${VTK_LIBRARIES})
+#    else()
+#        target_link_libraries(wdsoptser vtkHybrid vtkWidgets)
+#    endif()
+#ENDIF()
 
 
 

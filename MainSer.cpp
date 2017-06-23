@@ -8,39 +8,46 @@
 //
 
 
-#include "NSGAII.hpp"
-#include "WDSUtility.hpp"
+#include "WDSNSGAII.h"
+#include "WDSOptParameters.hpp"
+#include "WDSOptPostProcess.h"
+#include "WDSOptGUICheckpoints.h"
 
 
 int main(int argc, char * argv[]) {
 
     WDSOptParameters params;
-    processOptions(argc, argv, params);
+    int err = processOptions(argc, argv, params);
+    if (err != 0)
+    {
+        return EXIT_SUCCESS;
+    }
+    params.evaluator_id = 0;
     WDSOptimiser wds_eval(params);
-    
-    // The random number generator
-    typedef std::mt19937 RNG;
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    RNG rng(seed);
-    
-    // The optimiser
-    NSGAII<RNG> optimiser(rng, wds_eval);
-    
+
+    //Make the NSGAII
+    boost::shared_ptr<NSGAIIObjs> nsgaii_obs = getNSGAIIForWDS(wds_eval);
+
     // Add the checkpoints
-    createCheckpoints(optimiser, params);
-    
-    
+    createCheckpoints(nsgaii_obs->optimiser, params);
+
     // Initialise population
-    PopulationSPtr pop = intialisePopulationRandomDVAssignment(params.pop_size, wds_eval.getProblemDefinitions(), rng);
-    optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
-    
+    PopulationSPtr pop(new Population);
+    if (params.restart_pop_file.first == "no_seed")
+    {
+        pop = intialisePopulationRandomDVAssignment(params.pop_size, wds_eval.getProblemDefinitions(), nsgaii_obs->rng);
+    }
+    else
+    {
+        pop = restore_population(params.restart_pop_file.second);
+    }
+    nsgaii_obs->optimiser.getIntMutationOperator().setMutationInverseDVSize(pop->at(0));
+
     // Run the optimisation
-    optimiser(pop);
+    nsgaii_obs->optimiser(pop);
     
     //Postprocess the results
     postProcessResults(wds_eval, pop, params);
 
-//    //Cleanup
-//    cleanup(params);
 
 }
